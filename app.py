@@ -65,11 +65,20 @@ if uploaded_file is not None:
     from utils.preprocessing import preprocess 
     input_tensor = preprocess(image)
 
+
     # 3. Perform Inference
     with torch.no_grad():
         output = model(input_tensor)
         probabilities = torch.nn.functional.softmax(output[0], dim=0)
         confidence, predicted_class = torch.max(probabilities, 0)
+
+    # PASTE THE PROBABILITY DISPLAY HERE
+    st.write("### Prediction Probability")
+    st.progress(float(probabilities[1]), text=f"Gas Leak: {probabilities[1]*100:.1f}%")
+    st.progress(float(probabilities[0]), text=f"No Leak: {probabilities[0]*100:.1f}%")
+
+    # 4. Map the result to a label
+    labels = ["No Leak", "Gas Leak Detected"]
 
     # 4. Map the result to a label
     # Adjust these labels to match your specific training classes
