@@ -1,29 +1,27 @@
+import os
+import streamlit as st
 import torch
-from collections import OrderedDict
 from model.model import Gas_leak_model
 
-# 1. Initialize the architecture skeleton
-model = Gas_leak_model()
+# 1. Debug: Let's see what files are actually in the model folder
+if os.path.exists('model'):
+    st.write("Files found in model folder:", os.listdir('model'))
 
-# 2. Define the path to your weights file
-model_path = 'model/Gas_leak_model.pth' # Make sure this filename is exact!
+model_path = 'model/Gas_leak_model.pth' 
 
-try:
-    # 3. Load the state_dict onto CPU
-    state_dict = torch.load(model_path, map_location=torch.device('cpu'))
-    
-    # 4. Clean the state_dict (Removes 'module.' prefix if trained on GPU)
-    new_state_dict = OrderedDict()
-    for k, v in state_dict.items():
-        name = k[7:] if k.startswith('module.') else k
-        new_state_dict[name] = v
-    
-    # 5. Load weights into the skeleton
-    # strict=False allows the app to run even if there are tiny key mismatches
-    model.load_state_dict(new_state_dict, strict=False)
-    model.eval()
-    
-    st.success("Model loaded successfully!")
+@st.cache_resource # This keeps the model in memory so it doesn't reload every time
+def load_gas_model():
+    model = Gas_leak_model()
+    if os.path.exists(model_path):
+        state_dict = torch.load(model_path, map_location='cpu')
+        model.load_state_dict(state_dict, strict=False)
+        model.eval()
+        return model
+    else:
+        st.error(f"File not found at {model_path}. Please check your GitHub folder.")
+        return None
 
-except Exception as e:
-    st.error(f"Model loading failed: {e}")
+model = load_gas_model()
+
+if model:
+    st.success("Gas Leak Detection Model is ready!")
