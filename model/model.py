@@ -1,13 +1,13 @@
 import torch
+from torchvision import models
 import torch.nn as nn
-import torch
 from torchvision import models
 
-# Just define the function directly
 def Gas_leak_model():
+    # These four lines must be indented by exactly 4 spaces (one Tab)
     model = models.resnet18(weights=None)
     num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, 2) 
+    model.fc = nn.Linear(num_ftrs, 2)
     return model
 
 # If you want to initialize it here for use within this file:
