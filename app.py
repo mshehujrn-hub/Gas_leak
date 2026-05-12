@@ -3,26 +3,28 @@ import streamlit as st
 import torch
 from model.model import Gas_leak_model
 
-# 1. Debug: Let's see what files are actually in the model folder
+# This will print the contents of your model folder directly on the app screen
 if os.path.exists('model'):
-    st.write("Files found in model folder:", os.listdir('model'))
+    files = os.listdir('model')
+    st.write(f"Files found in /model folder: {files}")
+else:
+    st.error("The folder 'model' does not exist on GitHub!")
 
-model_path = 'model/Gas_leak_model.pth' 
+# CHANGE THIS to match your file name exactly
+model_filename = 'Gas_leak_model.pth' 
+model_path = os.path.join('model', model_filename)
 
-@st.cache_resource # This keeps the model in memory so it doesn't reload constantly
-def load_gas_model():
-    model = Gas_leak_model()
+@st.cache_resource
+def load_my_model():
     if os.path.exists(model_path):
-        state_dict = torch.load(model_path, map_location='cpu')
+        model = Gas_leak_model()
+        # map_location='cpu' is mandatory for Streamlit Cloud
+        state_dict = torch.load(model_path, map_location=torch.device('cpu'))
         model.load_state_dict(state_dict, strict=False)
         model.eval()
         return model
-    else:
-        # This will now show up because 'st' is imported correctly above
-        st.error(f"File not found at {model_path}. Check your GitHub folder.")
-        return None
+    return None
 
-model = load_gas_model()
-
+model = load_my_model()
 if model:
-    st.success("Gas Leak Detection Model is ready!")
+    st.success("Target acquired: Model loaded!")
