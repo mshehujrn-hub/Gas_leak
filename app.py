@@ -45,3 +45,33 @@ if error_message:
 elif model:
     st.success("Model loaded successfully!")
     # Proceed with your file_uploader and prediction logic here...
+    # --- IMAGE UPLOADER SECTION ---
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    # 1. Display the uploaded image
+    image = Image.open(uploaded_file)
+    st.image(image, caption='Uploaded Image', use_container_width=True)
+    st.write("Classifying...")
+
+    # 2. Preprocess the image
+    # Note: Ensure you have your 'preprocess' function imported from utils
+    from utils.preprocessing import preprocess 
+    input_tensor = preprocess(image)
+
+    # 3. Perform Inference
+    with torch.no_grad():
+        output = model(input_tensor)
+        probabilities = torch.nn.functional.softmax(output[0], dim=0)
+        confidence, predicted_class = torch.max(probabilities, 0)
+
+    # 4. Map the result to a label
+    # Adjust these labels to match your specific training classes
+    labels = ["No Leak", "Gas Leak Detected"] 
+    result = labels[predicted_class.item()]
+
+    # 5. Display the Results
+    if result == "Gas Leak Detected":
+        st.error(f"⚠️ Result: {result} ({confidence*100:.2f}% confidence)")
+    else:
+        st.success(f"✅ Result: {result} ({confidence*100:.2f}% confidence)")
