@@ -9,7 +9,7 @@ if os.path.exists('model'):
 
 model_path = 'model/Gas_leak_model.pth' 
 
-@st.cache_resource # This keeps the model in memory so it doesn't reload every time
+@st.cache_resource # This keeps the model in memory so it doesn't reload constantly
 def load_gas_model():
     model = Gas_leak_model()
     if os.path.exists(model_path):
@@ -18,7 +18,8 @@ def load_gas_model():
         model.eval()
         return model
     else:
-        st.error(f"File not found at {model_path}. Please check your GitHub folder.")
+        # This will now show up because 'st' is imported correctly above
+        st.error(f"File not found at {model_path}. Check your GitHub folder.")
         return None
 
 model = load_gas_model()
