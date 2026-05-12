@@ -1,32 +1,47 @@
-import os
 import streamlit as st
 import torch
+import os
+from collections import OrderedDict
 from model.model import Gas_leak_model
 
-# This will print the contents of your model folder directly on the app screen
-if os.path.exists('model'):
-    files = os.listdir('model')
-    st.write(f"Files found in /model folder: {files}")
-else:
-    st.error("The folder 'model' does not exist on GitHub!")
+# 1. Initialize Streamlit page config (Always first)
+st.set_page_config(page_title="Gas Leak Detection")
+st.title("⛽ Gas Leak Detection")
 
-# Change this line to be all lowercase
-model_filename = 'gas_leak_model.pth' 
-model_path = os.path.join('model', model_filename)
+# 2. Define the exact path found in your logs
+# We use lowercase 'gas_leak_model.pth' to match your folder list
+model_path = os.path.join('model', 'gas_leak_model.pth')
 
 @st.cache_resource
-def load_my_model():
-    if os.path.exists(model_path):
-        model = Gas_leak_model()
-        # map_location='cpu' is mandatory for Streamlit Cloud
-        state_dict = torch.load(model_path, map_location=torch.device('cpu'))
-        model.load_state_dict(state_dict, strict=False)
-        model.eval()
-        return model
-    return None
-
-model = load_my_model()
-if model:
-    st.success("Target acquired: Model loaded!")
-
+def load_and_configure_model():
+    # Initialize the architecture
+    model = Gas_leak_model()
     
+    if not os.path.exists(model_path):
+        return None, f"File not found at {model_path}"
+
+    try:
+        # Load weights for CPU
+        state_dict = torch.load(model_path, map_location=torch.device('cpu'))
+        
+        # Clean module prefix if necessary
+        new_state_dict = OrderedDict()
+        for k, v in state_dict.items():
+            name = k[7:] if k.startswith('module.') else k
+            new_state_dict[name] = v
+            
+        model.load_state_dict(new_state_dict, strict=False)
+        model.eval()
+        return model, None
+    except Exception as e:
+        return None, str(e)
+
+# 3. Execution logic
+model, error_message = load_and_configure_model()
+
+if error_message:
+    st.error(f"Model loading failed: {error_message}")
+    st.info("Check if your file name is exactly 'gas_leak_model.pth' in lowercase.")
+elif model:
+    st.success("Model loaded successfully!")
+    # Proceed with your file_uploader and prediction logic here...
