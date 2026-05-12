@@ -5,6 +5,11 @@ import os
 from collections import OrderedDict
 from model.model import Gas_leak_model
 
+st.write("### Prediction Probability")
+# Assuming 'probabilities' is the tensor from your inference code
+st.progress(float(probabilities[1]), text=f"Gas Leak: {probabilities[1]*100:.1f}%")
+st.progress(float(probabilities[0]), text=f"No Leak: {probabilities[0]*100:.1f}%")
+
 # 1. Initialize Streamlit page config (Always first)
 st.set_page_config(page_title="Gas Leak Detection")
 st.title("⛽ Gas Leak Detection")
