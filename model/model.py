@@ -1,18 +1,22 @@
 import torch
-import torch.nn as nn
-from torchvision import models
+from model.model import Gas_leak_model
 
-def Gas_leak_model():
-    # 1. Initialize the base model
-    model = models.resnet18(weights=None) 
+# 1. Initialize the architecture
+model = Gas_leak_model()
+
+# 2. Load the weights with map_location
+try:
+    state_dict = torch.load('model/your_weights_file.pth', map_location=torch.device('cpu'))
     
-    # 2. Define the input features for the final layer
-    num_ftrs = model.fc.in_features
-    
-    # 3. Define your classes (must be defined before use!)
-    class_names = ['Leak', 'No Leak'] 
-    
-    # 4. Rebuild the final layer
-    model.fc = nn.Linear(num_ftrs, len(class_names))
-    
-    return model
+    # If you see "module." in your error keys, use this fix:
+    from collections import OrderedDict
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k[7:] if k.startswith('module.') else k
+        new_state_dict[name] = v
+        
+    model.load_state_dict(new_state_dict)
+    model.eval()
+    print("Model loaded successfully!")
+except Exception as e:
+    print(f"Error loading model: {e}")
