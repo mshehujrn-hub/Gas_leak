@@ -1,15 +1,18 @@
+import torch
 import torch.nn as nn
-import torch.optim as optim
-from torchvision import models # Added missing import for models
+from torchvision import models
 
-model = models.resnet18(weights='IMAGENET1K_V1')
-num_ftrs = model.fc.in_features
-
-# Changing the output layer to 4, based on the number of class_names
-model.fc = nn.Linear(num_ftrs, len(class_names))
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = model.to(device)
-
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0001)
+def Gas_leak_model():
+    # 1. Initialize the base model
+    model = models.resnet18(weights=None) 
+    
+    # 2. Define the input features for the final layer
+    num_ftrs = model.fc.in_features
+    
+    # 3. Define your classes (must be defined before use!)
+    class_names = ['Leak', 'No Leak'] 
+    
+    # 4. Rebuild the final layer
+    model.fc = nn.Linear(num_ftrs, len(class_names))
+    
+    return model
