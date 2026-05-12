@@ -10,8 +10,8 @@ if os.path.exists('model'):
 else:
     st.error("The folder 'model' does not exist on GitHub!")
 
-# CHANGE THIS to match your file name exactly
-model_filename = 'Gas_leak_model.pth' 
+# Change this line to be all lowercase
+model_filename = 'gas_leak_model.pth' 
 model_path = os.path.join('model', model_filename)
 
 @st.cache_resource
@@ -28,3 +28,5 @@ def load_my_model():
 model = load_my_model()
 if model:
     st.success("Target acquired: Model loaded!")
+
+    
