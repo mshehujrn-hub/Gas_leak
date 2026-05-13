@@ -2,43 +2,43 @@ import streamlit as st
 from PIL import Image
 import torch
 import os
+import gdown
 from collections import OrderedDict
 from model.model import Gas_leak_model
 from utils.preprocessing import preprocess 
 
-# 1. Page Config (MUST be first)
+# 1. Page Config
 st.set_page_config(page_title="Gas Leak Detection", page_icon="⛽")
 st.title("⛽ Gas Leak Detection")
 
-# 2. Robust Model Loading Logic
-import gdown
+# 2. Setup Paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_DIR = os.path.join(BASE_DIR, 'model')
+MODEL_PATH = os.path.join(MODEL_DIR, 'gas_leak_model.pth')
 
-# 2. Robust Model Loading Logic
 @st.cache_resource
-def load_and_configure_model():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    model_dir = os.path.join(base_dir, 'model')
-    model_path = os.path.join(model_dir, 'gas_leak_model.pth')
-    
-    # --- AUTO-DOWNLOAD IF MISSING ---
-    if not os.path.exists(model_path):
-        if not os.path.exists(model_dir):
-            os.makedirs(model_dir)
+def get_model():
+    # Ensure folder exists
+    if not os.path.exists(MODEL_DIR):
+        os.makedirs(MODEL_DIR)
         
-        # Replace the ID below with your Google Drive File ID
-        file_id = 'YOUR_GOOGLE_DRIVE_FILE_ID' 
+    # --- DOWNLOAD FROM GOOGLE DRIVE ---
+    # Replace 'YOUR_FILE_ID' with the actual ID from your Google Drive link
+    if not os.path.exists(MODEL_PATH):
+        file_id = '1A2B3C4D5E_REPLACE_THIS_WITH_YOUR_ID' 
         url = f'https://drive.google.com/uc?id={file_id}'
-        
         try:
-            with st.spinner("Downloading model weights (first-time setup)..."):
-                gdown.download(url, model_path, quiet=False)
+            with st.spinner("Downloading model weights from Google Drive..."):
+                gdown.download(url, MODEL_PATH, quiet=False)
         except Exception as e:
-            return None, f"Download failed: {e}"
+            return None, f"Download failed: {str(e)}"
 
+    # --- LOAD PRE-TRAINED MODEL ---
     try:
         model = Gas_leak_model()
-        state_dict = torch.load(model_path, map_location=torch.device('cpu'))
+        state_dict = torch.load(MODEL_PATH, map_location=torch.device('cpu'))
         
+        # Strip 'module.' prefix
         new_state_dict = OrderedDict()
         for k, v in state_dict.items():
             name = k[7:] if k.startswith('module.') else k
@@ -48,11 +48,15 @@ def load_and_configure_model():
         model.eval()
         return model, None
     except Exception as e:
-        return None, f"Error loading weights: {str(e)}"
+        return None, f"Model load error: {str(e)}"
+
+# Define the variables globally
+model, error_message = get_model()
+
 # 3. UI and Prediction Logic
 if error_message:
     st.error(f"❌ {error_message}")
-    st.info("💡 Tip: Ensure your model file is pushed to GitHub and is not just a Git LFS pointer.")
+    st.info("Check your Google Drive ID and sharing permissions (Anyone with link).")
 elif model:
     st.success("✅ Model loaded successfully!")
     
@@ -62,24 +66,21 @@ elif model:
         image = Image.open(uploaded_file)
         st.image(image, caption='Uploaded Image', use_container_width=True)
         
-        # Perform Inference
-        with st.spinner('Analyzing image...'):
+        with st.spinner('Analyzing...'):
             input_tensor = preprocess(image)
             with torch.no_grad():
                 output = model(input_tensor)
-                probabilities = torch.nn.functional.softmax(output[0], dim=0)
-                confidence, predicted_class = torch.max(probabilities, 0)
+                probs = torch.nn.functional.softmax(output[0], dim=0)
+                conf, pred = torch.max(probs, 0)
 
-        # UI Output
+        # UI Results
         st.write("### Prediction Probability")
-        st.progress(float(probabilities[1]), text=f"Gas Leak: {probabilities[1]*100:.1f}%")
-        st.progress(float(probabilities[0]), text=f"No Leak: {probabilities[0]*100:.1f}%")
+        st.progress(float(probs[1]), text=f"Gas Leak: {probs[1]*100:.1f}%")
+        st.progress(float(probs[0]), text=f"No Leak: {probs[0]*100:.1f}%")
 
-        # Display Final Result
         labels = ["No Leak", "Gas Leak Detected"] 
-        result = labels[predicted_class.item()]
-        
+        result = labels[pred.item()]
         if result == "Gas Leak Detected":
-            st.error(f"⚠️ Result: {result} ({confidence*100:.2f}% confidence)")
+            st.error(f"⚠️ Result: {result} ({conf*100:.2f}% confidence)")
         else:
-            st.success(f"✅ Result: {result} ({confidence*100:.2f}% confidence)")
+            st.success(f"✅ Result: {result} ({conf*100:.2f}% confidence)")
