@@ -11,38 +11,34 @@ st.set_page_config(page_title="Gas Leak Detection", page_icon="⛽")
 st.title("⛽ Gas Leak Detection")
 
 # 2. Robust Model Loading Logic
+import gdown
+
+# 2. Robust Model Loading Logic
 @st.cache_resource
 def load_and_configure_model():
-    # Define every possible place the model could be on the Streamlit server
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    possible_paths = [
-        os.path.join(base_dir, 'model', 'gas_leak_model.pth'),
-        'model/gas_leak_model.pth',
-        '/mount/src/gas_leak/model/gas_leak_model.pth'
-    ]
+    model_dir = os.path.join(base_dir, 'model')
+    model_path = os.path.join(model_dir, 'gas_leak_model.pth')
     
-    actual_path = None
-    for p in possible_paths:
-        if os.path.exists(p):
-            actual_path = p
-            break
-            
-    if not actual_path:
-        # Diagnostic check: see what the server actually sees
-        folder_path = os.path.join(base_dir, 'model')
-        if os.path.exists(folder_path):
-            files = os.listdir(folder_path)
-            return None, f"Folder exists but file not found. Found in /model: {files}"
-        return None, f"Model folder not found at {folder_path}. Check GitHub casing (model vs Model)."
+    # --- AUTO-DOWNLOAD IF MISSING ---
+    if not os.path.exists(model_path):
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
+        
+        # Replace the ID below with your Google Drive File ID
+        file_id = 'YOUR_GOOGLE_DRIVE_FILE_ID' 
+        url = f'https://drive.google.com/uc?id={file_id}'
+        
+        try:
+            with st.spinner("Downloading model weights (first-time setup)..."):
+                gdown.download(url, model_path, quiet=False)
+        except Exception as e:
+            return None, f"Download failed: {e}"
 
     try:
-        # Initialize model architecture
         model = Gas_leak_model()
+        state_dict = torch.load(model_path, map_location=torch.device('cpu'))
         
-        # Load weights to CPU
-        state_dict = torch.load(actual_path, map_location=torch.device('cpu'))
-        
-        # Strip 'module.' prefix from DataParallel training
         new_state_dict = OrderedDict()
         for k, v in state_dict.items():
             name = k[7:] if k.startswith('module.') else k
@@ -53,10 +49,6 @@ def load_and_configure_model():
         return model, None
     except Exception as e:
         return None, f"Error loading weights: {str(e)}"
-
-# Execute the loader
-model, error_message = load_and_configure_model()
-
 # 3. UI and Prediction Logic
 if error_message:
     st.error(f"❌ {error_message}")
