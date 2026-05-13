@@ -11,24 +11,19 @@ from huggingface_hub import hf_hub_download
 st.set_page_config(page_title="Gas Leak Detection", page_icon="⛽")
 st.title("⛽ Gas Leak Detection")
 
-# 2. Model Loading Logic (Updated for Hugging Face)
 @st.cache_resource
 def load_model_from_hf():
     try:
-        # Downloads the model from your Hugging Face repo
-        # Filename must match exactly (including capital G)
+        # UPDATED: Using your actual Hugging Face username and repo
+        # UPDATED: Using 'Gas_leak_model.pth' with capital 'G' as seen in your upload
         model_path = hf_hub_download(
-            repo_id="msquareeed/Gas_leak_detection", 
+            repo_id="msquareeed/gas_leak_detection", 
             filename="Gas_leak_model.pth"
         )
         
-        # Initialize Architecture
         model = Gas_leak_model()
-        
-        # Load Weights
         state_dict = torch.load(model_path, map_location=torch.device('cpu'))
         
-        # Clean state dict (removes 'module.' prefix)
         new_state_dict = OrderedDict()
         for k, v in state_dict.items():
             name = k[7:] if k.startswith('module.') else k
@@ -39,7 +34,7 @@ def load_model_from_hf():
         return model, None
     except Exception as e:
         return None, str(e)
-
+        
 # Initialize global variables
 model, error_message = load_model_from_hf()
 
@@ -63,7 +58,6 @@ elif model:
                 probs = torch.nn.functional.softmax(output[0], dim=0)
                 conf, pred = torch.max(probs, 0)
 
-        # UI Results
         st.write("### Prediction Probability")
         st.progress(float(probs[1]), text=f"Gas Leak: {probs[1]*100:.1f}%")
         st.progress(float(probs[0]), text=f"No Leak: {probs[0]*100:.1f}%")
