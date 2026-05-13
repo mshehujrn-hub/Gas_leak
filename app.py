@@ -14,8 +14,7 @@ st.title("⛽ Gas Leak Detection")
 @st.cache_resource
 def load_model_from_hf():
     try:
-        # UPDATED: Using your actual Hugging Face username and repo
-        # UPDATED: Using 'Gas_leak_model.pth' with capital 'G' as seen in your upload
+        # Downloads from your Hugging Face repo
         model_path = hf_hub_download(
             repo_id="msquareeed/gas_leak_detection", 
             filename="Gas_leak_model.pth"
@@ -58,13 +57,19 @@ elif model:
                 probs = torch.nn.functional.softmax(output[0], dim=0)
                 conf, pred = torch.max(probs, 0)
 
-        st.write("### Prediction Probability")
-        st.progress(float(probs[1]), text=f"Gas Leak: {probs[1]*100:.1f}%")
-        st.progress(float(probs[0]), text=f"No Leak: {probs[0]*100:.1f}%")
+        # 4. UPDATED: Display 4 Probabilities
+        st.write("### Prediction Probabilities")
+        
+        # Mapping labels to your 4 classes
+        # NOTE: Update these names to match your training folder names
+        labels = ["No Leak", "Minor Leak", "Critical Leak", "Other/Noise"] 
+        
+        for i in range(len(labels)):
+            st.progress(float(probs[i]), text=f"{labels[i]}: {probs[i]*100:.1f}%")
 
-        labels = ["No Leak", "Gas Leak Detected"] 
+        # 5. Final Result
         result = labels[pred.item()]
-        if result == "Gas Leak Detected":
+        if "Leak" in result and "No Leak" not in result:
             st.error(f"⚠️ Result: {result} ({conf*100:.2f}% confidence)")
         else:
             st.success(f"✅ Result: {result} ({conf*100:.2f}% confidence)")
