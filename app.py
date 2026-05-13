@@ -23,7 +23,7 @@ def get_model():
         os.makedirs(MODEL_DIR)
         
     # This is the ID for your gas_leak_model.pth file
-        file_id = '1eT-y9-O-S-wG3S9v_I-V6K8J3k0G7y8Z'    
+            
     # --- DOWNLOAD FROM GOOGLE DRIVE ---
     # Replace 'YOUR_FILE_ID' with the actual ID from your Google Drive link
     if not os.path.exists(MODEL_PATH):
