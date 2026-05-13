@@ -2,45 +2,29 @@ import streamlit as st
 from PIL import Image
 import torch
 import os
-import gdown
 from collections import OrderedDict
 from model.model import Gas_leak_model
 from utils.preprocessing import preprocess 
+from huggingface_hub import hf_hub_download
 
 # 1. Page Config
 st.set_page_config(page_title="Gas Leak Detection", page_icon="⛽")
 st.title("⛽ Gas Leak Detection")
 
-# 2. Setup Paths
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.path.join(BASE_DIR, 'model')
-MODEL_PATH = os.path.join(MODEL_DIR, 'gas_leak_model.pth')
-
+# 2. Model Loading Logic
 @st.cache_resource
-def get_model():
-    # Ensure folder exists
-    if not os.path.exists(MODEL_DIR):
-        os.makedirs(MODEL_DIR)
-        
-    # This is the ID for your gas_leak_model.pth file
-            
-    # --- DOWNLOAD FROM GOOGLE DRIVE ---
-    # Replace 'YOUR_FILE_ID' with the actual ID from your Google Drive link
-    if not os.path.exists(MODEL_PATH):
-        file_id = '1eT-y9-O-S-wG3S9v_I-V6K8J3k0G7y8Z' 
-        url = f'https://drive.google.com/uc?id={file_id}'
-        try:
-            with st.spinner("Downloading model weights from Google Drive..."):
-                gdown.download(url, MODEL_PATH, quiet=False)
-        except Exception as e:
-            return None, f"Download failed: {str(e)}"
-
-    # --- LOAD PRE-TRAINED MODEL ---
+def load_model_from_hf():
     try:
-        model = Gas_leak_model()
-        state_dict = torch.load(MODEL_PATH, map_location=torch.device('cpu'))
+        # This downloads the model directly from a public repository
+        # I am using a generic repo path; replace with your own if needed
+        model_path = hf_hub_download(
+            repo_id="mshehujrn/gas-leak-detection", 
+            filename="gas_leak_model.pth"
+        )
         
-        # Strip 'module.' prefix
+        model = Gas_leak_model()
+        state_dict = torch.load(model_path, map_location=torch.device('cpu'))
+        
         new_state_dict = OrderedDict()
         for k, v in state_dict.items():
             name = k[7:] if k.startswith('module.') else k
@@ -50,15 +34,15 @@ def get_model():
         model.eval()
         return model, None
     except Exception as e:
-        return None, f"Model load error: {str(e)}"
+        return None, str(e)
 
-# Define the variables globally
-model, error_message = get_model()
+# Initialize variables globally to fix the NameError
+model, error_message = load_model_from_hf()
 
 # 3. UI and Prediction Logic
 if error_message:
     st.error(f"❌ {error_message}")
-    st.info("Check your Google Drive ID and sharing permissions (Anyone with link).")
+    st.info("Check if the model file is accessible on Hugging Face.")
 elif model:
     st.success("✅ Model loaded successfully!")
     
@@ -75,7 +59,6 @@ elif model:
                 probs = torch.nn.functional.softmax(output[0], dim=0)
                 conf, pred = torch.max(probs, 0)
 
-        # UI Results
         st.write("### Prediction Probability")
         st.progress(float(probs[1]), text=f"Gas Leak: {probs[1]*100:.1f}%")
         st.progress(float(probs[0]), text=f"No Leak: {probs[0]*100:.1f}%")
