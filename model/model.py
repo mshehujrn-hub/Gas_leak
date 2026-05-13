@@ -3,11 +3,11 @@ import torch.nn as nn
 from torchvision import models
 
 def Gas_leak_model():
-    # Must match training: resnet18, resnet34, or resnet50
+    # Load ResNet18 architecture
     model = models.resnet18(weights=None) 
     
-    # Must match the number of classes you trained with
+    # Change from 2 to 4 to match your trained weights
     num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, 2) 
+    model.fc = nn.Linear(num_ftrs, 4) 
     
     return model
