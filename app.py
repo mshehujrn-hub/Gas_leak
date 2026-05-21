@@ -8,15 +8,15 @@ from utils.preprocessing import preprocess
 from huggingface_hub import hf_hub_download
 
 # 1. Page Config
-st.set_page_config(page_title="Gas Leak Detection", page_icon="⛽")
-st.title("⛽ Gas Leak Detection")
+st.set_page_config(page_title="Gas Leak Detector", page_icon="⛽")
+st.title("⛽ Gas Leak Detector")
 
 @st.cache_resource
 def load_model_from_hf():
     try:
         # Downloads from your Hugging Face repo
         model_path = hf_hub_download(
-            repo_id="msquareeed/gas_leak_detection", 
+            repo_id="msquareeed/gas_leak_detector", 
             filename="Gas_leak_model.pth"
         )
         
