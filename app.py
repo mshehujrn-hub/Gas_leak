@@ -16,7 +16,7 @@ def load_model_from_hf():
     try:
         # Downloads from your Hugging Face repo
         model_path = hf_hub_download(
-            repo_id="msquareeed/gas_leak_detector", 
+            repo_id="msquareeed/gas_leak_detection", 
             filename="Gas_leak_model.pth"
         )
         
